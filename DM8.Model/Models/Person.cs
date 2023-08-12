@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TestDm8Compiler.Models
+namespace DM8.Models
 {
     public class Person
     {

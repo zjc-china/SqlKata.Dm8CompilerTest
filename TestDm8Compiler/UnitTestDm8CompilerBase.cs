@@ -13,6 +13,8 @@ namespace TestDm8Compiler
 
         public Dm8QueryFactory CreateDefaultDm8QueryFactory()
         {
+            var connection = new DmConnection(ConnectionString);
+            connection.Schema = "PERSON";
             return new Dm8QueryFactory(
                 new DmConnection(ConnectionString), new Dm8Compiler());
         }

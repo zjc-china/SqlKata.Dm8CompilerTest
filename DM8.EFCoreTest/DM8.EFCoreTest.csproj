@@ -17,8 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DM8.Model\DM8.Model.csproj" />
-    <ProjectReference Include="..\Dm8Compiler\Dm8Compiler.csproj" />
+    <ProjectReference Include="..\DM8EfCore\DM8EfCore.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,143 +1,18 @@
-﻿using NLog;
-using SqlKata;
-using SqlKata.Compilers;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Dm8Compilers
+namespace SqlKata.Compilers
 {
-    public class Dm8Compiler : Compiler
+    public class SqlServerCompiler : Compiler
     {
-       public Logger logger = LogManager.GetCurrentClassLogger();
-
-        public Dm8Compiler()
+        public SqlServerCompiler()
         {
-            OpeningIdentifier = "";
-            ClosingIdentifier = "";
-            parameterPrefix = ":p";
-            logger.Info("Dm8Compiler  start");
+            OpeningIdentifier = "[";
+            ClosingIdentifier = "]";
+            LastId = "SELECT scope_identity() as Id";
         }
 
-        public override string EngineCode { get; } = "DM8";
+        public override string EngineCode { get; } = EngineCodes.SqlServer;
         public bool UseLegacyPagination { get; set; } = false;
-
-
-
-        private int GetLimit(Query query)
-        {
-            var limit = query.GetOneComponent<LimitClause>("limit", EngineCode);
-            return limit?.Limit ?? 0;
-        }
-
-        private long GetOffset(Query query)
-        {
-            var offset = query.GetOneComponent<OffsetClause>("offset", EngineCode);
-
-            return offset?.Offset ?? 0;
-        }
-
-        public override string CompileFrom(SqlResult ctx)
-        {
-            if (ctx.Query.HasComponent("from", EngineCode))
-            {
-                var from = ctx.Query.GetOneComponent<AbstractFrom>("from", EngineCode);
-
-                return "FROM " + CompileTableExpression(ctx, from);
-            }
-
-            return string.Empty;
-        }
-
-        public override string CompileTableExpression(SqlResult ctx, AbstractFrom from)
-        {
-            if (from is RawFromClause raw)
-            {
-                ctx.Bindings.AddRange(raw.Bindings);
-                return WrapIdentifiers(raw.Expression);
-            }
-
-            if (from is QueryFromClause queryFromClause)
-            {
-                var fromQuery = queryFromClause.Query;
-
-                var alias = string.IsNullOrEmpty(fromQuery.QueryAlias) ? "" : $" {TableAsKeyword}" + WrapValue(fromQuery.QueryAlias);
-
-                var subCtx = CompileSelectQuery(fromQuery);
-
-                ctx.Bindings.AddRange(subCtx.Bindings);
-
-                return "(" + subCtx.RawSql + ")" + alias;
-            }
-
-            if (from is FromClause fromClause)
-            {
-                return Wrap(fromClause.Table);
-            }
-
-            throw new Exception("TableExpression");
-        }
-
-        /// <summary>
-        /// Wrap a single string in a column identifier.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public override string Wrap(string value)
-        {
-
-            if (value.ToLowerInvariant().Contains(" as "))
-            {
-                var (before, after) = SplitAlias(value);
-
-                return Wrap(before) + $" {ColumnAsKeyword}" + WrapValue(after);
-            }
-
-            if (value.Contains("."))
-            {
-                return string.Join(".", value.Split('.').Select((x, index) =>
-                {
-                    return WrapValue(x);
-                }));
-            }
-
-            // If we reach here then the value does not contain an "AS" alias
-            // nor dot "." expression, so wrap it as regular value.
-            return WrapValue(value);
-        }
-
-        /// <summary>
-        /// Wrap a single string in keyword identifiers.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public override string WrapValue(string value)
-        {
-            if (value == "*") return value;
-
-            var opening = this.OpeningIdentifier;
-            var closing = this.ClosingIdentifier;
-
-            if (string.IsNullOrWhiteSpace(opening) && string.IsNullOrWhiteSpace(closing)) return value;
-
-            return opening + value.Replace(closing, closing + closing) + closing;
-        }
-
-        public (string, string) SplitAlias(string value)
-        {
-            var index = value.LastIndexOf(" as ", StringComparison.OrdinalIgnoreCase);
-
-            if (index > 0)
-            {
-                var before = value.Substring(0, index);
-                var after = value.Substring(index + 4);
-                return (before, after);
-            }
-
-            return (value, null);
-        }
 
         protected override SqlResult CompileSelectQuery(Query query)
         {
@@ -153,9 +28,8 @@ namespace Dm8Compilers
                 Query = query,
             };
 
-
-            var limit = GetLimit(query);
-            var offset = GetOffset(query);
+            var limit = query.GetLimit(EngineCode);
+            var offset = query.GetOffset(EngineCode);
 
 
             if (!query.HasComponent("select"))
@@ -174,16 +48,16 @@ namespace Dm8Compilers
 
             if (limit == 0)
             {
-                result.RawSql = $"SELECT * FROM ({result.RawSql}) AS results_wrapper WHERE row_num >= {parameterPlaceholder}";
+                result.RawSql = $"SELECT * FROM ({result.RawSql}) AS [results_wrapper] WHERE [row_num] >= {parameterPlaceholder}";
                 result.Bindings.Add(offset + 1);
             }
             else
             {
-                result.RawSql = $"SELECT * FROM ({result.RawSql}) AS results_wrapper WHERE row_num BETWEEN {parameterPlaceholder} AND {parameterPlaceholder}";
+                result.RawSql = $"SELECT * FROM ({result.RawSql}) AS [results_wrapper] WHERE [row_num] BETWEEN {parameterPlaceholder} AND {parameterPlaceholder}";
                 result.Bindings.Add(offset + 1);
                 result.Bindings.Add(limit + offset);
             }
-            logger.Info(result.RawSql);
+
             return result;
         }
 
@@ -199,8 +73,8 @@ namespace Dm8Compilers
             // If there is a limit on the query, but not an offset, we will add the top
             // clause to the query, which serves as a "limit" type clause within the
             // SQL Server system similar to the limit keywords available in MySQL.
-            var limit = ctx.Query.GetDMLimit(EngineCode);
-            var offset = ctx.Query.GetDMOffset(EngineCode);
+            var limit = ctx.Query.GetLimit(EngineCode);
+            var offset = ctx.Query.GetOffset(EngineCode);
 
             if (limit > 0 && offset == 0)
             {
@@ -230,8 +104,8 @@ namespace Dm8Compilers
                 return null;
             }
 
-            var limit = ctx.Query.GetDMLimit(EngineCode);
-            var offset = ctx.Query.GetDMOffset(EngineCode);
+            var limit = ctx.Query.GetLimit(EngineCode);
+            var offset = ctx.Query.GetOffset(EngineCode);
 
             if (limit == 0 && offset == 0)
             {

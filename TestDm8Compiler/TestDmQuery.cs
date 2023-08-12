@@ -1,11 +1,11 @@
-﻿using NLog;
+﻿using DM8.Models;
+using NLog;
 using SqlKata.Execution;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TestDm8Compiler.Models;
 
 namespace TestDm8Compiler
 {
@@ -21,14 +21,12 @@ namespace TestDm8Compiler
             _db.Logger = compiled => {
                 logger.Info(compiled.ToString());
             };
-            var actName = (await _db.Query("Person.PERSON")
-                .Where("Person.PERSON.PersonId", 1)
-                .OrderByDesc("PersonId")
+            var actName = (await _db.Query("PERSON.PERSON")
+                .Where("PERSONID", 1)
+                .OrderByDesc("PERSONID")
                 .FirstOrDefaultAsync<Person>()).Name;
 
-    
-
-            var expectedName = "李丽";
+                var expectedName = "李丽";
 
             Assert.AreEqual(expectedName, actName);
 
