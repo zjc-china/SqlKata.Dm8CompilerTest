@@ -1,5 +1,6 @@
 using Dm;
 using Dm8Compilers;
+using NLog;
 using SqlKata.Compilers;
 using System.Data;
 using System.Data.Common;
@@ -13,10 +14,15 @@ namespace TestDm8Compiler
 
         public Dm8QueryFactory CreateDefaultDm8QueryFactory()
         {
+            Logger logger = LogManager.GetCurrentClassLogger();
             var connection = new DmConnection(ConnectionString);
             connection.Schema = "PERSON";
-            return new Dm8QueryFactory(
+            var db = new Dm8QueryFactory(
                 new DmConnection(ConnectionString), new Dm8Compiler());
+                 db.Logger = compiled => {
+                     logger.Info(compiled.ToString());
+                 };
+            return db;
         }
 
         public DbConnection CreateDefaultDmConnection()

@@ -44,8 +44,9 @@ namespace Dm8Compilers
             if (ctx.Query.HasComponent("from", EngineCode))
             {
                 var from = ctx.Query.GetOneComponent<AbstractFrom>("from", EngineCode);
+                var tableName = "FROM " + CompileTableExpression(ctx, from);
 
-                return "FROM " + CompileTableExpression(ctx, from);
+                return tableName;
             }
 
             return string.Empty;
