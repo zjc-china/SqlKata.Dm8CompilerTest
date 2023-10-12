@@ -16,9 +16,8 @@ namespace TestDm8Compiler
         {
             Logger logger = LogManager.GetCurrentClassLogger();
             var connection = new DmConnection(ConnectionString);
-            connection.Schema = "PERSON";
             var db = new Dm8QueryFactory(
-                new DmConnection(ConnectionString), new Dm8Compiler());
+                new DmConnection(ConnectionString), new Dm8Compiler("PERSON"));
                  db.Logger = compiled => {
                      logger.Info(compiled.ToString());
                  };

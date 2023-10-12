@@ -11,15 +11,23 @@ namespace Dm8Compilers
 {
     public class Dm8Compiler : Compiler
     {
-       public Logger logger = LogManager.GetCurrentClassLogger();
+        public Logger logger = LogManager.GetCurrentClassLogger();
 
         public Dm8Compiler()
         {
             OpeningIdentifier = "";
             ClosingIdentifier = "";
             parameterPrefix = ":p";
-            logger.Info("Dm8Compiler  start");
+            Database = string.Empty;
         }
+
+        public Dm8Compiler(string defaultDbName):this()
+        {
+            Database = !string.IsNullOrWhiteSpace(defaultDbName) ? defaultDbName + "." : string.Empty;
+        }
+
+
+        public string Database { get; set; } = "";
 
         public override string EngineCode { get; } = "DM8";
         public bool UseLegacyPagination { get; set; } = false;
@@ -46,7 +54,7 @@ namespace Dm8Compilers
                 var from = ctx.Query.GetOneComponent<AbstractFrom>("from", EngineCode);
                 if (ctx.Query.Clauses.Any(t =>
                 {
-                    if (t is FromClause )
+                    if (t is FromClause)
                     {
                         var clause = (FromClause)t;
                         if (clause.Table.Contains("."))
@@ -55,10 +63,10 @@ namespace Dm8Compilers
                         }
                     }
                     return false;
-                }) == false )
+                }) == false)
                 {
                     //todo: PERSON. 替换为默认数据库名称
-                    return "FROM PERSON." + CompileTableExpression(ctx, from);
+                    return $"FROM {Database}" + CompileTableExpression(ctx, from);
                 }
                 var tableName = "FROM " + CompileTableExpression(ctx, from);
 
