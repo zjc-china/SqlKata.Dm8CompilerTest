@@ -44,6 +44,22 @@ namespace Dm8Compilers
             if (ctx.Query.HasComponent("from", EngineCode))
             {
                 var from = ctx.Query.GetOneComponent<AbstractFrom>("from", EngineCode);
+                if (ctx.Query.Clauses.Any(t =>
+                {
+                    if (t is FromClause )
+                    {
+                        var clause = (FromClause)t;
+                        if (clause.Table.Contains("."))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }) == false )
+                {
+                    //todo: PERSON. 替换为默认数据库名称
+                    return "FROM PERSON." + CompileTableExpression(ctx, from);
+                }
                 var tableName = "FROM " + CompileTableExpression(ctx, from);
 
                 return tableName;

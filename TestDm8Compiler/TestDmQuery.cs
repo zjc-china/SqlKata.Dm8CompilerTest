@@ -10,7 +10,7 @@ namespace TestDm8Compiler
         public async Task Test_PersonIdOne_ReturnNameLiLi()
         {
             var _db = CreateDefaultDm8QueryFactory();
-            var actName = (await _db.Query("PERSON.PERSON")
+            var actName = (await _db.Query("PERSON")
                 .Where("PERSONID", 1)
                 .OrderByDesc("PERSONID")
                 .FirstOrDefaultAsync<Person>()).Name;
@@ -25,7 +25,7 @@ namespace TestDm8Compiler
         public async Task Test_PersonIdOne_CountReturnOne()
         {
             var _db = CreateDefaultDm8QueryFactory();
-            var act = (await _db.Query("PERSON.PERSON")
+            var act = (await _db.Query("PERSON")
                 .Where("PERSONID", 1)
                 .CountAsync<int>());
 
@@ -40,7 +40,7 @@ namespace TestDm8Compiler
         public async Task Test_ForPage()
         {
             var _db = CreateDefaultDm8QueryFactory();
-            var act = await _db.Query("PERSON.PERSON")
+            var act = await _db.Query("PERSON")
                 .Where("PERSONID","<=", 5)
                 .OrderByDesc("PERSONID")
                  .ForPage(1, 5)
